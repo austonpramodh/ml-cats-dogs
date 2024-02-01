@@ -2,7 +2,8 @@ import validators
 from flask import Blueprint, jsonify, request
 import logging
 from flask_expects_json import expects_json
-from .models_apis import load_model, infer_image
+from .models_apis import load_model, infer_image, infer_image_url
+from PIL import Image
 
 bp = Blueprint('ingest', __name__, url_prefix='/cat_dog_v1')
 
@@ -36,7 +37,7 @@ def detect_img():
         })
 
     # detect the classes, which one is this
-    model_response = infer_image(img_url=img_url)
+    model_response = infer_image_url(img_url=img_url)
 
     data = {
         "success": True,
@@ -44,6 +45,42 @@ def detect_img():
         "data": {
             "body": img_url,
             "model_response": model_response
+        }
+    }
+
+    return jsonify(data)
+
+
+@bp.route('/detect-image2', methods=['POST'])
+# A post request with image file as form data
+def detect_img2():
+    # This is post request
+    # Check if the post request has the file part
+    if 'file' not in request.files:
+        return jsonify({
+            "success": False,
+            "message": "No file part in the request!"
+        })
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({
+            "success": False,
+            "message": "No file selected for uploading!"
+        })
+    
+    # Convert the file to PIL image
+    img = Image.open(file)
+
+    inference_response = infer_image(img)
+
+    # detect the classes, which one is this
+    # model_response = infer_image(img_url=img_url)
+
+    data = {
+        "success": True,
+        "message": "Feteched a unique url with signature",
+        "data": {
+            "model_response": inference_response
         }
     }
 
